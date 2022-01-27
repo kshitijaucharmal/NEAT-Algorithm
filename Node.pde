@@ -1,45 +1,42 @@
 class Node{
   int number, layer;
-  float sum = 0f;
-  float outputValue = 0f;
+  float sum, outputValue;
   ArrayList<Gene> inGenes = new ArrayList<Gene>();
-  
-  // for showing
-  PVector pos;
-  float node_size = 30;
   
   Node(int n, int l){
     number = n;
     layer = l;
-    
-    pos = new PVector(width/2, height/2);
-    if(layer != input_layer || layer != output_layer){
-      pos.y = random(height);
-    }
   }
   
-  void show(){
-    push();
-    fill(255);
-    stroke(0);
-    strokeWeight(3);
-    circle(pos.x, pos.y, node_size);
-    fill(0);
-    strokeWeight(2);
-    textAlign(CENTER, CENTER);
-    textSize(node_size-7);
-    text(number, pos.x, pos.y);
-    pop();
-  }
-  
-  Node Clone(){
+  Node clone(){
     Node n = new Node(number, layer);
     n.sum = sum;
     n.outputValue = outputValue;
     return n;
   }
   
-  void AddGene(Gene g){
-    inGenes.add(g);
+  void calculate(){
+    if(layer == input_layer){
+      println("No calculations on the input layer");
+      return;
+    }
+    
+    for(Gene g : inGenes){
+      if(g.enabled)
+        sum += g.in_node.outputValue * g.weight;
+    }
+    
+    outputValue = activate(sum);
+  }
+  
+  // sigmoid activation
+  float activate(float x){
+    return 1 / (1 + exp(-x));
+  }
+  
+  // reset function
+  void reset(){
+    sum = 0;
+    outputValue = 0;
   }
 }

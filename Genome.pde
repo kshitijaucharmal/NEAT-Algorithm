@@ -1,35 +1,58 @@
 class Genome{
-  int inputs, outputs;
-  ArrayList<Node> nodes = new ArrayList<Node>();
+  GeneH gh;
+  int total_nodes;
+  int highest_inno;
+  
   ArrayList<Gene> genes = new ArrayList<Gene>();
+  ArrayList<Node> nodes = new ArrayList<Node>();
   
-  int total_nodes = 0;
-  int highest_inno = 0;
-  
-  GeneHistory gh;
-  
-  Genome(GeneHistory gh){
+  Genome(GeneH gh){
     this.gh = gh;
-    inputs = gh.inputs;
-    outputs = gh.outputs;
     
+    // init nodes
     for(int i = 0; i < inputs; i++){
       nodes.add(new Node(total_nodes++, input_layer));
     }
-    
-    for(int i = 0; i < outputs; i++){
+    for(int i = 0; i < outputs;i++){
       nodes.add(new Node(total_nodes++, output_layer));
     }
   }
   
-  boolean Exists(Gene x){
+  boolean exists(int x){
     for(Gene g : genes){
-      if(g.inno == x.inno) return true;
+      if(g.inno == x){
+        return true;
+      }
     }
     return false;
   }
   
-  void AddGene(){
+  void connect_nodes(Node n1, Node n2){
+    if(n1.layer > n2.layer){
+      Node temp = n1;
+      n1 = n2;
+      n2 = temp;
+    }
+    
+    Gene c = gh.exists(n1, n2);
+    Gene x = new Gene(n1, n2);
+    
+    if (c != null){
+      x.inno = c.inno;
+      if(!exists(c.inno)){
+        genes.add(x);
+        n2.inGenes.add(x);
+      }
+    }
+    else{
+      x.inno = gh.global_inno++;
+      gh.allGenes.add(x.clone());
+      genes.add(x);
+      n2.inGenes.add(x);
+    }
+  }
+  
+  void add_gene(){
     Node n1 = nodes.get(int(random(nodes.size())));
     Node n2 = nodes.get(int(random(nodes.size())));
     
@@ -38,98 +61,175 @@ class Genome{
       n2 = nodes.get(int(random(nodes.size())));
     }
     
-    ConnectNodes(n1, n2);
+    connect_nodes(n1, n2);
   }
   
-  void AddNode(){
-    if(genes.size() == 0) AddGene();
+  void add_node(){
+    if(genes.size() == 0) add_gene();
     
-    Node n = new Node(total_nodes++, int(random(input_layer+1, output_layer))); // make a new node on a random layer
-    Gene g = genes.get(int(random(genes.size()))); // select a random gene
-    
-    while(g.in_node.layer > n.layer || g.out_node.layer < n.layer){
+    Node n = new Node(total_nodes++, (int)random(input_layer+1, output_layer));
+    Gene g = genes.get(int(random(genes.size())));
+    while(!g.enabled){
       g = genes.get(int(random(genes.size())));
     }
-    
-    g.enabled = false; // disable the gene
-    ConnectNodes(g.in_node, n); // connect from input to n
-    ConnectNodes(n, g.out_node); // connect from n to output
-    genes.get(genes.size()-1).weight = g.weight; // set same weight for n to outputs
-    genes.get(genes.size()-2).weight = 1f; // set weight to 1 for input to n
-    nodes.add(n); // add the node to the array
+    connect_nodes(g.in_node, n);
+    connect_nodes(n, g.out_node);
+    genes.get(genes.size()-1).weight = g.weight;
+    genes.get(genes.size()-2).weight = 1f;
+    g.enabled = false;
+    nodes.add(n);
   }
   
-  void ConnectNodes(Node n1, Node n2){
-    // n2 always on bigger layer
-    if(n1.layer > n2.layer){
-      Node temp = n1;
-      n1 = n2;
-      n2 = temp;
+  float[] calculate(float[] ins){
+    if(ins.length != inputs) {
+      println("Not correct inputs");
+      return null;
     }
     
-    Gene c = gh.Exists(n1, n2); // if exists or is null
-    Gene x = new Gene(n1, n2); // new Gene to be added
-    
-    // dosent exist in history
-    if(c == null){
-      x.inno = gh.global_inno++;
-      gh.AddGene(x.Clone());
-      genes.add(x);
-      n2.AddGene(x);
+    for(int i = 0; i < inputs; i++){
+      nodes.get(i).outputValue = ins[i];
     }
-    else{
-      if(!Exists(c)){
-        x.inno = c.inno;
-        genes.add(x);
-        n2.AddGene(x);
+    
+    float[] outs = new float[outputs];
+    int ctr = 0;
+    
+    // all hidden nodes
+    for(int i = inputs+outputs; i < nodes.size(); i++){
+      nodes.get(i).calculate();
+    }
+    
+    // for output nodes
+    for(int i = inputs; i < inputs+outputs; i++){
+      nodes.get(i).calculate();
+      outs[ctr++] = nodes.get(i).outputValue;
+    }
+    
+    // reset all nodes
+    for(int i = 0; i < nodes.size(); i++){
+      nodes.get(i).reset();
+    }
+    
+    return outs;
+  }
+  
+  Gene getGene(int inno){
+    for(Gene g : genes){
+      if(g.inno == inno){
+        return g.clone();
       }
     }
+    return null;
   }
   
-  Genome Crossover(Genome partner){
-    Genome child = new Genome(gh);
+  Genome crossover(Genome partner, boolean summary){
+    Genome child = new Genome(this.gh);
+    child.nodes.clear();
+    if(total_nodes > partner.total_nodes){
+      child.total_nodes = total_nodes;
+      for(int i = 0; i < total_nodes; i++){
+        child.nodes.add(nodes.get(i).clone());
+      }
+    }
+    else{
+      child.total_nodes = partner.total_nodes;
+      for(int i = 0; i < partner.total_nodes; i++){
+        child.nodes.add(partner.nodes.get(i).clone());
+      }
+    }
+    
+    for(int i = 0; i < gh.global_inno; i++){
+      boolean p1 = exists(i);
+      boolean p2 = partner.exists(i);
+
+      if(p1 && p2){
+        if(summary) println(i + " Exists in both parents");
+        if(random(1) < 0.5) child.genes.add(getGene(i));
+        else child.genes.add(partner.getGene(i));
+        continue;
+      }
+      if(p1 && !p2){
+        if(summary) println(i + " Exists in parent 1");
+        child.genes.add(getGene(i));
+        continue;
+      }
+      if(p2 && !p1){
+        if(summary) println(i + " Exists in parent 2");
+        child.genes.add(partner.getGene(i));
+        continue;
+      }
+      if(summary) println(i + " Doesn't exist in either");
+    }
+    child.fix_connections();
     return child;
   }
   
-  void PrintGenome(){
-    println("Genome\n-----------------------------------------------------");
-    for(int i = 0; i < genes.size(); i++){
-      genes.get(i).PrintGene();
+  float measure_cd(Genome partner){
+    float cd = 0; // compatibility distance
+    
+    int matching = 0;
+    int disjoint = 0;
+    int excess = 0;
+    int n = 1; // fix this
+    
+    float wsum = 0;
+    
+    for(int i = 0; i < gh.global_inno; i++){
+      boolean p1 = exists(i);
+      boolean p2 = partner.exists(i);
+      
+      if(p1 && p2){
+        matching ++;
+        wsum += abs(getGene(i).weight - partner.getGene(i).weight);
+        continue;
+      }
+      
+      if(p1 || p2){
+        disjoint ++;
+        continue;
+      }
     }
+    if(matching == 0) matching = 1;
+    cd = ((c1 * excess)/n) + ((c2 * disjoint)/n) + (c3 * wsum/matching);
+    
+    println(cd);
+    return cd;
   }
   
-  String ShowGenomeText(){
-    String s = "Genome\n-----------------------------------------------------\n";
-    for(int i = 0; i < genes.size(); i++){
-      s += genes.get(i).ShowGeneText();
-    }
-    return s;
-  }
-  
-  float startx = 20, endx = width-20;
-  float gapx = (endx - startx)/(input_layer + output_layer);
-  float gapy = 100;
-  
-  void show(){
+  void fix_connections(){
     for(int i = 0; i < nodes.size(); i++){
-      nodes.get(i).pos.x = gapx * nodes.get(i).layer + startx;
-      if(nodes.get(i).layer == input_layer){
-        nodes.get(i).pos.x = startx;
-        nodes.get(i).pos.y = gapy * nodes.get(i).number + gapy;
-      }
-      else if(nodes.get(i).layer == output_layer){
-        nodes.get(i).pos.x = width-20;
-        nodes.get(i).pos.y = gapy * nodes.get(i).number + gapy;
-        nodes.get(i).pos.y -= inputs * gapy;
+      nodes.get(i).inGenes.clear();
+    }
+    
+    for(int i = 0; i < genes.size(); i++){
+      genes.get(i).in_node.inGenes.add(genes.get(i));
+    }
+  }
+  
+  void mutate(){
+    if(genes.size() == 0) add_gene();
+    
+    if(random(1) < 0.8){
+      for(int i = 0; i < genes.size(); i++){
+        genes.get(i).mutateGene();
       }
     }
     
+    if(random(1) < 0.08){
+      add_gene();
+    }
+    
+    if(random(1) < 0.02){
+      add_node();
+    }
+  }
+  
+  String printGenome(boolean printToConsole){
+    String s = "Genome\n----------------------------------------\n";
     for(Gene g : genes){
-      g.show();
+      s += g.printGene(false);
     }
-    
-    for(Node n : nodes){
-      n.show();
-    }
+    s+='\n';
+    if(printToConsole) print(s);
+    return s;
   }
 }
