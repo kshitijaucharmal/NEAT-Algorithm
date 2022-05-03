@@ -223,13 +223,14 @@ class Genome{
     }
   }
   
-  String printGenome(boolean printToConsole){
-    String s = "Genome\n----------------------------------------\n";
-    for(Gene g : genes){
-      s += g.printGene(false);
+  String printGenome(boolean printToConsole) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("Genome : \n");
+    for (Gene g : genes) {
+      sb.append(g.GetInfo());
     }
-    s+='\n';
-    if(printToConsole) print(s);
-    return s;
+    sb.append('\n');
+    if(printToConsole) println(sb.toString());
+    return sb.toString();
   }
 }
