@@ -12,7 +12,7 @@ class Gene{
     this.enabled = true;
   }
   
-  String GetInfo(boolean printToConsole){
+  String printGene(boolean printToConsole){
     StringBuilder sb = new StringBuilder();
     sb.append(inno + "] ");
     sb.append(in_node.number + "(" + in_node.layer + ')');
