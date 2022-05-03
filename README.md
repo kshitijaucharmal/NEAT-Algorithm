@@ -4,10 +4,10 @@ Classic NEAT Algorithm written in processing (java) ide.
 This is an incomplete implmentation.
 
 ## Features
-  1. Adding Connection Check
-  2. Adding Node       Check
-  3. Mutate            Check
-  4. Crossover         Check
-  5. Speciation        Not Done
+  1. Adding Connection ✔
+  2. Adding Node       ✔
+  3. Mutate            ✔
+  4. Crossover         ✔
+  5. Speciation        ×
 
 You are free to contribute !!
