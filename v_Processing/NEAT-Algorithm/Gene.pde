@@ -12,12 +12,16 @@ class Gene{
     this.enabled = true;
   }
   
-  String printGene(boolean printToConsole){
-    String g = inno + ". " + in_node.number + "(" + in_node.layer + ") " +
-    out_node.number + "(" + out_node.layer + ") " + weight + " " + enabled + '\n';
-    if(printToConsole)
-      println(g);
-     return g;
+  String GetInfo(boolean printToConsole){
+    StringBuilder sb = new StringBuilder();
+    sb.append(inno + "] ");
+    sb.append(in_node.number + "(" + in_node.layer + ')');
+    sb.append(" -> ");
+    sb.append(out_node.number + "(" + out_node.layer + ") ");
+    sb.append(weight + " ");
+    sb.append(enabled + " \n");
+    if(printToConsole) println(sb.toString());
+    return sb.toString();
   }
   
   void mutateGene(){
