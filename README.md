@@ -8,6 +8,6 @@ This is an incomplete implmentation.
   2. Adding Node       ✔
   3. Mutate            ✔
   4. Crossover         ✔
-  5. Speciation        ×
+  5. Speciation        ❌
 
 You are free to contribute !!
