@@ -227,7 +227,7 @@ class Genome{
     StringBuilder sb = new StringBuilder();
     sb.append("Genome : \n");
     for (Gene g : genes) {
-      sb.append(g.GetInfo());
+      sb.append(g.printGene());
     }
     sb.append('\n');
     if(printToConsole) println(sb.toString());
